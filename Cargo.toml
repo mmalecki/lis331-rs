@@ -1,19 +1,20 @@
 [package]
-name = "lis3dh"
-description = "An embedded-hal driver for the LIS3DH accelerometer that implements the generic accelerometer trait"
-version = "0.4.2"
+name = "lis331hh"
+description = "An embedded-hal driver for the LIS331HH accelerometer that implements the generic accelerometer trait"
+version = "0.1.0"
 license = "Apache-2.0 OR MIT"
 authors = [
     "Benjamin Bergman <ben@benbergman.ca>",
     "Paul Sajna <sajattack@gmail.com>",
     "Jesse Braham <jesse@beta7.io>",
-    "Folkert de Vries <folkert@folkertdev.nl>"
+    "Folkert de Vries <folkert@folkertdev.nl>",
+    "Maciej Małecki <me@mmalecki>"
 ]
 keywords = [
     "embedded-hal-driver",
     "accelerometer",
 ]
-repository = "https://github.com/BenBergman/lis3dh-rs"
+repository = "https://github.com/mmalecki/lis331hh-rs"
 edition = "2018"
 
 [dependencies]
@@ -23,6 +24,9 @@ num_enum = { version = "~0.5", default-features = false }
 
 [dev-dependencies]
 circuit_playground_express = { version = "~0.7", features = ["use_semihosting"] }
+
+# ARM
 cortex-m-rt = "~0.6"
 cortex-m-semihosting = "~0.3"
+
 panic-halt = "~0.2"
