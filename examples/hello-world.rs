@@ -4,8 +4,8 @@ use esp_idf_hal::i2c;
 use esp_idf_hal::peripherals::Peripherals;
 use esp_idf_hal::prelude::*;
 
-use lis331hh::{Lis331hh, SlaveAddr};
-use lis331hh::accelerometer::RawAccelerometer;
+use lis331::{Lis331, SlaveAddr};
+use lis331::accelerometer::RawAccelerometer;
 
 use std::thread;
 use std::time::Duration;
@@ -23,7 +23,7 @@ fn main() {
     let config = <i2c::config::MasterConfig as Default>::default().baudrate(100.kHz().into());
     let mut i2c = i2c::Master::<i2c::I2C0, _, _>::new(i2c, i2c::MasterPins { sda, scl }, config).unwrap();
 
-    let mut sensor = Lis331hh::new_i2c(i2c, SlaveAddr::Default).unwrap();
+    let mut sensor = Lis331::new_i2c(i2c, SlaveAddr::Default).unwrap();
 
     loop {
         let accel = sensor.accel_raw().unwrap();

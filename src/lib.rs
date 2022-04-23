@@ -59,11 +59,11 @@ pub enum Error<BusError, PinError> {
 }
 
 /// `LIS3DH` driver.
-pub struct Lis331hh<CORE> {
+pub struct Lis331<CORE> {
     core: CORE,
 }
 
-impl<I2C, E> Lis331hh<Lis331hhI2C<I2C>>
+impl<I2C, E> Lis331<Lis331I2C<I2C>>
 where
     I2C: WriteRead<Error = E> + i2c::Write<Error = E>,
 {
@@ -72,7 +72,7 @@ where
     /// An example using the [nrf52840_hal](https://docs.rs/nrf52840-hal/latest/nrf52840_hal/index.html):
     ///
     ///     use nrf52840_hal::gpio::{Level, PushPull};
-    ///     use lis3dh::Lis331hh;
+    ///     use lis3dh::Lis331;
     ///     
     ///     let peripherals = nrf52840_hal::pac::Peripherals::take().unwrap();
     ///     let pins = p0::Parts::new(peripherals.P0);
@@ -89,7 +89,7 @@ where
     ///         nrf52840_hal::twim::Frequency::K400,
     ///     );
     ///     
-    ///     let lis3dh = Lis331hh::new_i2c(i2c, lis3dh::SlaveAddr::Default).unwrap();
+    ///     let lis3dh = Lis331::new_i2c(i2c, lis3dh::SlaveAddr::Default).unwrap();
     pub fn new_i2c(
         i2c: I2C,
         address: SlaveAddr,
@@ -102,12 +102,12 @@ where
         address: SlaveAddr,
         config: Configuration,
     ) -> Result<Self, Error<E, core::convert::Infallible>> {
-        let core = Lis331hhI2C {
+        let core = Lis331I2C {
             i2c,
             address: address.addr(),
         };
 
-        let mut lis3dh = Lis331hh { core };
+        let mut lis3dh = Lis331 { core };
 
         lis3dh.configure(config)?;
 
@@ -115,7 +115,7 @@ where
     }
 }
 
-impl<SPI, NSS, ESPI, ENSS> Lis331hh<Lis331hhSPI<SPI, NSS>>
+impl<SPI, NSS, ESPI, ENSS> Lis331<Lis331SPI<SPI, NSS>>
 where
     SPI: spi::Write<u8, Error = ESPI> + Transfer<u8, Error = ESPI>,
     NSS: OutputPin<Error = ENSS>,
@@ -125,7 +125,7 @@ where
     ///
     ///     use nrf52840_hal::gpio::{p0::{Parts, P0_28}, *};
     ///     use nrf52840_hal::spim::Spim;
-    ///     use lis3dh::Lis331hh;
+    ///     use lis3dh::Lis331;
     ///     
     ///     let peripherals = nrf52840_hal::pac::Peripherals::take().unwrap();
     ///     let port0 = Parts::new(peripherals.P0);
@@ -150,7 +150,7 @@ where
     ///     );
     ///
     ///     // create and initialize the sensor
-    ///     let lis3dh = Lis331hh::new_spi(spi, cs).unwrap();
+    ///     let lis3dh = Lis331::new_spi(spi, cs).unwrap();
     pub fn new_spi(spi: SPI, nss: NSS) -> Result<Self, Error<ESPI, ENSS>> {
         Self::new_spi_with_config(spi, nss, Configuration::default())
     }
@@ -160,9 +160,9 @@ where
         nss: NSS,
         config: Configuration,
     ) -> Result<Self, Error<ESPI, ENSS>> {
-        let core = Lis331hhSPI { spi, nss };
+        let core = Lis331SPI { spi, nss };
 
-        let mut lis3dh = Lis331hh { core };
+        let mut lis3dh = Lis331 { core };
 
         lis3dh.configure(config)?;
 
@@ -170,9 +170,9 @@ where
     }
 }
 
-impl<CORE> Lis331hh<CORE>
+impl<CORE> Lis331<CORE>
 where
-    CORE: Lis331hhCore,
+    CORE: Lis331Core,
 {
     /// Configure the device
     pub fn configure(
@@ -378,7 +378,7 @@ where
 
     /// Configure an IRQ source.
     ///
-    /// LIS (latch interrupt request) will latch (keep active) the interrupt until the [`Lis331hh::get_irq_src`] is read.
+    /// LIS (latch interrupt request) will latch (keep active) the interrupt until the [`Lis331::get_irq_src`] is read.
     ///
     /// 4D detection is a subset of the 6D detection where detection on the Z axis is disabled.
     /// This setting only has effect when the interrupt mode is either `Movement` or `Position`.
@@ -463,9 +463,9 @@ where
     }
 }
 
-impl<CORE> Accelerometer for Lis331hh<CORE>
+impl<CORE> Accelerometer for Lis331<CORE>
 where
-    CORE: Lis331hhCore,
+    CORE: Lis331Core,
     CORE::PinError: Debug,
     CORE::BusError: Debug,
 {
@@ -509,9 +509,9 @@ where
     }
 }
 
-impl<CORE> RawAccelerometer<I16x3> for Lis331hh<CORE>
+impl<CORE> RawAccelerometer<I16x3> for Lis331<CORE>
 where
-    CORE: Lis331hhCore,
+    CORE: Lis331Core,
     CORE::PinError: Debug,
     CORE::BusError: Debug,
 {
@@ -531,7 +531,7 @@ where
     }
 }
 
-pub trait Lis331hhCore {
+pub trait Lis331Core {
     type BusError;
     type PinError;
 
@@ -549,9 +549,9 @@ pub trait Lis331hhCore {
     fn read_accel_bytes(&mut self) -> Result<[u8; 6], Error<Self::BusError, Self::PinError>>;
 }
 
-impl<CORE> Lis331hhCore for Lis331hh<CORE>
+impl<CORE> Lis331Core for Lis331<CORE>
 where
-    CORE: Lis331hhCore,
+    CORE: Lis331Core,
 {
     type BusError = CORE::BusError;
     type PinError = CORE::PinError;
@@ -576,8 +576,8 @@ where
     }
 }
 
-/// Marker to indicate I2C is used to communicate with the Lis331hh
-pub struct Lis331hhI2C<I2C> {
+/// Marker to indicate I2C is used to communicate with the Lis331
+pub struct Lis331I2C<I2C> {
     /// Underlying I²C device
     i2c: I2C,
 
@@ -585,7 +585,7 @@ pub struct Lis331hhI2C<I2C> {
     address: u8,
 }
 
-impl<I2C, E> Lis331hhCore for Lis331hhI2C<I2C>
+impl<I2C, E> Lis331Core for Lis331I2C<I2C>
 where
     I2C: WriteRead<Error = E> + i2c::Write<Error = E>,
 {
@@ -631,15 +631,15 @@ where
     }
 }
 
-/// Marker to indicate SPI is used to communicate with the Lis331hh
-pub struct Lis331hhSPI<SPI, NSS> {
+/// Marker to indicate SPI is used to communicate with the Lis331
+pub struct Lis331SPI<SPI, NSS> {
     /// Underlying SPI device
     spi: SPI,
 
     nss: NSS,
 }
 
-impl<SPI, NSS, ESPI, ENSS> Lis331hhSPI<SPI, NSS>
+impl<SPI, NSS, ESPI, ENSS> Lis331SPI<SPI, NSS>
 where
     SPI: spi::Write<u8, Error = ESPI> + Transfer<u8, Error = ESPI>,
     NSS: OutputPin<Error = ENSS>,
@@ -686,7 +686,7 @@ where
     }
 }
 
-impl<SPI, NSS, ESPI, ENSS> Lis331hhCore for Lis331hhSPI<SPI, NSS>
+impl<SPI, NSS, ESPI, ENSS> Lis331Core for Lis331SPI<SPI, NSS>
 where
     SPI: spi::Write<u8, Error = ESPI> + Transfer<u8, Error = ESPI>,
     NSS: OutputPin<Error = ENSS>,

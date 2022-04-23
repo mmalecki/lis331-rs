@@ -1,6 +1,6 @@
 [package]
-name = "lis331hh"
-description = "An embedded-hal driver for the LIS331HH accelerometer that implements the generic accelerometer trait"
+name = "lis331"
+description = "An embedded-hal driver for the LIS331 (DLH, HH) accelerometer that implements the generic accelerometer trait"
 version = "0.1.0"
 license = "Apache-2.0 OR MIT"
 authors = [

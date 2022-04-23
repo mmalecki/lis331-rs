@@ -1,4 +1,4 @@
-# `lis3dh-rs`
+# `lis331hh-rs`
 
 [![Crate][crate-image]][crate-link]
 [![Docs][docs-image]][docs-link]
@@ -8,13 +8,13 @@ Platform-agnostic Rust driver for the ST LIS3DH 3-axis MEMS "nano" accelerometer
 
 ## Resources
 
-- [LIS3DH product page][product-page]
-- [LIS3DH datasheet][datasheet]
+- [LIS331HH product page][product-page]
+- [LIS331HH datasheet][datasheet]
 
 ### Examples
+Examples are built for ESP32-C3.
 
-- [CPX](https://github.com/BenBergman/lis3dh-rs/blob/master/examples/cpx.rs)
-- [Interrupts](https://github.com/tweedegolf/lis3dh-interrupt-demo)
+- [Hello World](...
 
 ## License
 
