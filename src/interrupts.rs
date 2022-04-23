@@ -261,21 +261,6 @@ impl IrqPin for IrqPin1Config {
     }
 }
 
-impl IrqPin for IrqPin2Config {
-    fn ctrl_reg() -> Register {
-        Register::CTRL6
-    }
-
-    fn bits(self) -> u8 {
-        (self.click_en as u8) << 7
-            | (self.ia1_en as u8) << 6
-            | (self.ia2_en as u8) << 5
-            | (self.boot_en as u8) << 4
-            | (self.act_en as u8) << 3
-            | (self.active_low as u8) << 1
-    }
-}
-
 #[derive(Debug, Copy, Clone, Default)]
 #[doc(alias = "INT1_SRC")]
 #[doc(alias = "INT2_SRC")]

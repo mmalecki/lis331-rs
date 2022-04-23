@@ -23,22 +23,12 @@ impl SlaveAddr {
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(u8)]
 pub enum Register {
-    STATUS_AUX = 0x07,
-    OUT_ADC1_L = 0x08,
-    OUT_ADC1_H = 0x09,
-    OUT_ADC2_L = 0x0A,
-    OUT_ADC2_H = 0x0B,
-    OUT_ADC3_L = 0x0C,
-    OUT_ADC3_H = 0x0D,
-    WHOAMI = 0x0F,
-    CTRL0 = 0x1E,
-    TEMP_CFG = 0x1F,
     CTRL1 = 0x20,
     CTRL2 = 0x21,
     CTRL3 = 0x22,
     CTRL4 = 0x23,
     CTRL5 = 0x24,
-    CTRL6 = 0x25,
+    HP_FILTER_RESET = 0x25,
     REFERENCE = 0x26,
     STATUS = 0x27,
     OUT_X_L = 0x28,
@@ -47,8 +37,6 @@ pub enum Register {
     OUT_Y_H = 0x2B,
     OUT_Z_L = 0x2C,
     OUT_Z_H = 0x2D,
-    FIFO_CTRL = 0x2E,
-    FIFO_SRC = 0x2F,
     INT1_CFG = 0x30,
     INT1_SRC = 0x31,
     INT1_THS = 0x32,
@@ -57,14 +45,6 @@ pub enum Register {
     INT2_SRC = 0x35,
     INT2_THS = 0x36,
     INT2_DURATION = 0x37,
-    CLICK_CFG = 0x38,
-    CLICK_SRC = 0x39,
-    CLICK_THS = 0x3A,
-    TIME_LIMIT = 0x3B,
-    TIME_LATENCY = 0x3C,
-    TIME_WINDOW = 0x3D,
-    ACT_THS = 0x3E,
-    ACT_DUR = 0x3F,
 }
 
 impl Register {
@@ -77,25 +57,15 @@ impl Register {
     pub fn read_only(self) -> bool {
         matches!(
             self,
-            Register::STATUS_AUX
-                | Register::OUT_ADC1_L
-                | Register::OUT_ADC1_H
-                | Register::OUT_ADC2_L
-                | Register::OUT_ADC2_H
-                | Register::OUT_ADC3_L
-                | Register::OUT_ADC3_H
-                | Register::WHOAMI
-                | Register::STATUS
+            Register::STATUS
                 | Register::OUT_X_L
                 | Register::OUT_X_H
                 | Register::OUT_Y_L
                 | Register::OUT_Y_H
                 | Register::OUT_Z_L
                 | Register::OUT_Z_H
-                | Register::FIFO_SRC
                 | Register::INT1_SRC
                 | Register::INT2_SRC
-                | Register::CLICK_SRC
         )
     }
 }
@@ -105,17 +75,14 @@ impl Register {
 #[derive(Copy, Clone, Debug, Eq, PartialEq, TryFromPrimitive)]
 #[repr(u8)]
 pub enum Range {
-    /// ±16g
-    G16 = 0b11,
+    /// ±24g
+    G24 = 0b11,
 
-    /// ±8g
-    G8 = 0b10,
+    /// ±12g
+    G12 = 0b01,
 
-    /// ±4g
-    G4 = 0b01,
-
-    /// ±2g (Default)
-    G2 = 0b00,
+    /// ±6g (Default)
+    G6 = 0b00,
 }
 
 impl Range {
@@ -126,17 +93,17 @@ impl Range {
     /// Convert the range into an value in mili-g
     pub const fn as_mg(self) -> u8 {
         match self {
-            Range::G16 => 186,
-            Range::G8 => 62,
-            Range::G4 => 32,
-            Range::G2 => 16,
+            // XXX this is wrong and I don't know why
+            Range::G24 => 192,
+            Range::G12 => 96,
+            Range::G6 => 48,
         }
     }
 }
 
 impl Default for Range {
     fn default() -> Self {
-        Range::G2
+        Range::G6
     }
 }
 
@@ -182,29 +149,35 @@ fn crude_ceil(value: f32) -> u64 {
 #[derive(Copy, Clone, Debug, Eq, PartialEq, TryFromPrimitive)]
 #[repr(u8)]
 pub enum DataRate {
-    /// 400Hz (Default)
-    Hz_400 = 0b0111,
+    /// 1000Hz
+    Hz_1000 = 0b00111,
 
-    /// 200Hz
-    Hz_200 = 0b0110,
+    /// 400Hz
+    Hz_400 = 0b00110,
 
     /// 100Hz
-    Hz_100 = 0b0101,
+    Hz_100 = 0b00101,
 
     /// 50Hz
-    Hz_50 = 0b0100,
-
-    /// 25Hz
-    Hz_25 = 0b0011,
+    Hz_50 = 0b00100,
 
     /// 10Hz
-    Hz_10 = 0b0010,
+    Hz_10 = 0b11000,
+
+    /// 5Hz
+    Hz_5 = 0b10100,
+
+    /// 2Hz
+    Hz_2 = 0b10000,
 
     /// 1Hz
-    Hz_1 = 0b0001,
+    Hz_1 = 0b01100,
+
+    /// 0.5Hz
+    Hz_05 = 0b01000,
 
     /// Power down
-    PowerDown = 0b0000,
+    PowerDown = 0b00000,
 }
 
 impl DataRate {
@@ -214,13 +187,15 @@ impl DataRate {
 
     pub const fn sample_rate(self) -> f32 {
         match self {
+            DataRate::Hz_1000 => 1000.0,
             DataRate::Hz_400 => 400.0,
-            DataRate::Hz_200 => 200.0,
             DataRate::Hz_100 => 100.0,
             DataRate::Hz_50 => 50.0,
-            DataRate::Hz_25 => 25.0,
             DataRate::Hz_10 => 10.0,
+            DataRate::Hz_5 => 5.0,
+            DataRate::Hz_2 => 2.0,
             DataRate::Hz_1 => 1.0,
+            DataRate::Hz_05 => 0.5,
             DataRate::PowerDown => 0.0,
         }
     }
@@ -282,107 +257,6 @@ pub struct DataStatus {
     /// (XDA, YDA, ZDA) bits
     pub xyzda: (bool, bool, bool),
 }
-
-/// Information about what is stored in the FIFO
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub struct FifoStatus {
-    /// The watermark bit is set high when FIFO content exceeds watermark level
-    pub watermark: bool,
-    /// The overrun bit is set high when FIFO buffer is full; this means that the FIFO buffer
-    /// contains 32 unread samples. At the following ODR a new sample set replaces the
-    /// oldest FIFO value. The OVRN bit is set to 0 when the first sample set has been
-    /// read
-    pub overrun: bool,
-    /// The empty bit is set high when all FIFO samples have been read and FIFO is empty
-    pub empty: bool,
-    /// The current number of unread samples stored in the
-    /// FIFO buffer. When FIFO is enabled, this value increases
-    /// at ODR frequency until the buffer is full, whereas,
-    /// it decreases every time one sample set is retrieved from FIFO.
-    pub stack_size: u8,
-}
-
-impl FifoStatus {
-    /// Interpret the content of the `FIFO_SRC_REG` register
-    pub const fn from_bits(status: u8) -> Self {
-        Self {
-            watermark: (status >> 7) & 1 == 1,
-            overrun: (status >> 6) & 1 == 1,
-            empty: (status >> 5) & 1 == 1,
-            stack_size: status & 0b0001_1111,
-        }
-    }
-}
-
-/// FIFO behavior. See [the spec](https://www.st.com/resource/en/datasheet/lis3dh.pdf#page=22) for
-/// full details.
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub enum FifoMode {
-    /// The FIFO is not operational
-    ByPass,
-    /// In FIFO mode, the buffer continues filling data from the X, Y and Z accelerometer channels
-    /// until it is full (a set of 32 samples stored). When the FIFO is full, it stops collecting data from
-    /// the input channels and the FIFO content remains unchanged.
-    Fifo,
-    /// In Stream mode the FIFO continues filling data from the X, Y, and Z accelerometer channels
-    /// until the buffer is full (a set of 32 samples stored) at which point the FIFO buffer index
-    /// restarts from the beginning and older data is replaced by the current data. The oldest values
-    /// continue to be overwritten until a read operation frees the FIFO slots
-    Stream,
-    /// In Stream-to-FIFO mode, data from the X, Y and Z accelerometer channels are collected in
-    /// a combination of Stream mode and FIFO mode. The FIFO buffer starts operating in Stream
-    /// mode and switches to FIFO mode when interrupt 1 occurs.
-    StreamToFifoInt1,
-    /// In Stream-to-FIFO mode, data from the X, Y and Z accelerometer channels are collected in
-    /// a combination of Stream mode and FIFO mode. The FIFO buffer starts operating in Stream
-    /// mode and switches to FIFO mode when interrupt 2 occurs.
-    StreamToFifoInt2,
-}
-
-impl FifoMode {
-    /// Convert the mode to bits that can be written to the `FIFO_CTRL_REG` register.
-    pub const fn to_bits(self) -> u8 {
-        let mut trigger = false;
-
-        let mode = match self {
-            FifoMode::ByPass => 0b00,
-            FifoMode::Fifo => 0b01,
-            FifoMode::Stream => 0b10,
-            FifoMode::StreamToFifoInt1 => 0b11,
-            FifoMode::StreamToFifoInt2 => {
-                trigger = true;
-
-                0b11
-            }
-        };
-
-        mode << 6 | (trigger as u8) << 5
-    }
-}
-
-/// Operating mode.
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-#[repr(u8)]
-pub enum Mode {
-    /// High-resolution mode (12-bit data output)
-    HighResolution,
-
-    /// Normal mode (10-bit data output)
-    Normal,
-
-    /// Low-power mode (8-bit data output)
-    LowPower,
-}
-
-// === WHO_AMI_I (0Fh) ===
-
-/// `WHO_AM_I` device identification register
-pub const DEVICE_ID: u8 = 0x33;
-
-// === TEMP_CFG_REG (1Fh) ===
-
-pub const ADC_EN: u8 = 0b1000_0000;
-pub const TEMP_EN: u8 = 0b0100_0000;
 
 // === CTRL_REG1 (20h) ===
 
