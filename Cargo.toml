@@ -16,6 +16,17 @@ keywords = [
 ]
 repository = "https://github.com/mmalecki/lis331hh-rs"
 edition = "2018"
+resolver = "2"
+
+[profile.release]
+opt-level = "s"
+
+[profile.dev]
+debug = true # Symbols are nice and they don't increase the size on Flash
+opt-level = "z"
+
+[features]
+pio = ["esp-idf-sys/pio"]
 
 [dependencies]
 accelerometer = "~0.12"
@@ -23,10 +34,9 @@ embedded-hal = "~0.2"
 num_enum = { version = "~0.5", default-features = false }
 
 [dev-dependencies]
-circuit_playground_express = { version = "~0.7", features = ["use_semihosting"] }
+esp-idf-sys = { version = "0.31", features = ["binstart"] }
+esp-idf-hal = "0.36.0"
 
-# ARM
-cortex-m-rt = "~0.6"
-cortex-m-semihosting = "~0.3"
-
-panic-halt = "~0.2"
+[build-dependencies]
+embuild = "0.28"
+anyhow = "1"
