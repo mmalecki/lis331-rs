@@ -1,4 +1,4 @@
-//! Platform-agnostic LIS3DH accelerometer driver which uses I²C via
+//! Platform-agnostic LIS331 accelerometer driver which uses I²C via
 //! [embedded-hal]. This driver implements the [`Accelerometer`][acc-trait]
 //! and [`RawAccelerometer`][raw-trait] traits from the [accelerometer] crate.
 //!
@@ -58,7 +58,7 @@ pub enum Error<BusError, PinError> {
     WrongAddress,
 }
 
-/// `LIS3DH` driver.
+/// `LIS331` driver.
 pub struct Lis331<CORE> {
     core: CORE,
 }
@@ -67,7 +67,7 @@ impl<I2C, E> Lis331<Lis331I2C<I2C>>
 where
     I2C: WriteRead<Error = E> + i2c::Write<Error = E>,
 {
-    /// Create a new LIS3DH driver from the given I2C peripheral.
+    /// Create a new LIS331 driver from the given I2C peripheral.
     /// Default is Hz_400 HighResolution.
     /// An example using the [nrf52840_hal](https://docs.rs/nrf52840-hal/latest/nrf52840_hal/index.html):
     ///
@@ -120,7 +120,7 @@ where
     SPI: spi::Write<u8, Error = ESPI> + Transfer<u8, Error = ESPI>,
     NSS: OutputPin<Error = ENSS>,
 {
-    /// Create a new LIS3DH driver from the given SPI peripheral.
+    /// Create a new LIS331 driver from the given SPI peripheral.
     /// An example using the [nrf52840_hal](https://docs.rs/nrf52840-hal/latest/nrf52840_hal/index.html):
     ///
     ///     use nrf52840_hal::gpio::{p0::{Parts, P0_28}, *};
@@ -489,7 +489,7 @@ where
             Range::G24 => 0.0012,
         };
 
-        // The LIS331H only operates with one representation: 12-bit.
+        // The LIS331 only operates with one representation: 12-bit.
         // Using this knowledge, we determine how many bits the data needs to be
         // shifted. This is necessary because the raw data is in left-justified
         // two's complement and we would like for it to be right-justified instead.
